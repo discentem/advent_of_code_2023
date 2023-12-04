@@ -6,29 +6,69 @@ import (
 	"strconv"
 )
 
-func unscramble(input []byte) int {
-	sum := 0
-	var firstDigitStr *string
+type line string
+
+func (l line) onlyNums() line {
+	var final line
+	for _, b := range l {
+		n, err := strconv.Atoi(string(b))
+		if err != nil {
+			continue
+		}
+		final = final + line(strconv.Itoa(n))
+	}
+	fmt.Println("final: ", final)
+	return final
+}
+
+func (l line) numFromIndicies(indicies []int) (*int, error) {
+	final := ""
+	for _, i := range indicies {
+		if len(l)-1 < i {
+			return nil, fmt.Errorf("invalid index %d", i)
+		}
+		_, err := strconv.Atoi(final)
+		if err != nil {
+			continue
+		}
+		final = final + string(l[i])
+	}
+	n, err := strconv.Atoi(final)
+	if err != nil {
+		return nil, err
+	}
+	return &n, nil
+}
+
+func split(input []byte) []line {
+	var lines []line
+	var current line
 	for _, b := range input {
-		_, err := strconv.Atoi(string(b))
-		if err != nil {
+		if b == '\n' {
+			lines = append(lines, current)
+			current = ""
 			continue
 		}
-		if firstDigitStr == nil {
-			firstDigitStr = func() *string {
-				s := string(b)
-				return &s
-			}()
-			continue
-		}
-		twoDigitNum := *firstDigitStr + string(b)
-		fmt.Println(twoDigitNum)
-		n, err := strconv.Atoi(twoDigitNum)
+		current = current + line(string(b))
+	}
+	if current != "" {
+		lines = append(lines, current)
+	}
+	fmt.Println("lines:", lines)
+	return lines
+}
+
+func unscramble(input []byte) int {
+	var sum int
+	for _, l := range split(input) {
+		fmt.Println(l)
+		l = l.onlyNums()
+		fmt.Println(l)
+		n, err := l.numFromIndicies([]int{0, len(l) - 1})
 		if err != nil {
-			log.Printf("Error converting string to int: %s", err)
+			log.Fatal(err)
 		}
-		sum += n
-		firstDigitStr = nil
+		sum = sum + *n
 	}
 	return sum
 }
